@@ -1,4 +1,4 @@
-package org.superbiz.moviefun.albums;
+package org.superbiz.moviefun.moviesapi;
 
 import org.apache.tika.io.IOUtils;
 import org.slf4j.Logger;
@@ -15,39 +15,34 @@ import org.superbiz.moviefun.blobstore.BlobStore;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static java.lang.String.format;
-import static org.springframework.http.MediaType.IMAGE_JPEG_VALUE;
 
-@RestController
+@Controller
 @RequestMapping("/albums")
 public class AlbumsController {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final AlbumsRepository albumsRepository;
+    private final AlbumsClient albumsClient;
     private final BlobStore blobStore;
 
-    public AlbumsController(AlbumsRepository albumsRepository, BlobStore blobStore) {
-        this.albumsRepository = albumsRepository;
+    public AlbumsController(AlbumsClient albumsClient, BlobStore blobStore) {
+        this.albumsClient = albumsClient;
         this.blobStore = blobStore;
     }
 
-
     @GetMapping
-    public List<Album> index(Map<String, Object> model) {
-//        model.put("albums", albumsBean.getAlbums());
-//        return "albums";
-        return albumsRepository.getAlbums();
+    public String index(Map<String, Object> model) {
+        model.put("albums", albumsClient.getAlbums());
+        return "albums";
     }
 
     @GetMapping("/{albumId}")
-    public Album details(@PathVariable long albumId, Map<String, Object> model) {
-//        model.put("album", albumsBean.find(albumId));
-//        return "albumDetails";
-        return albumsRepository.find(albumId);
+    public String details(@PathVariable long albumId, Map<String, Object> model) {
+        model.put("album", albumsClient.find(albumId));
+        return "albumDetails";
     }
 
     @PostMapping("/{albumId}/cover")
@@ -83,9 +78,9 @@ public class AlbumsController {
 
     private void tryToUploadCover(@PathVariable Long albumId, @RequestParam("file") MultipartFile uploadedFile) throws IOException {
         Blob coverBlob = new Blob(
-                getCoverBlobName(albumId),
-                uploadedFile.getInputStream(),
-                uploadedFile.getContentType()
+            getCoverBlobName(albumId),
+            uploadedFile.getInputStream(),
+            uploadedFile.getContentType()
         );
 
         blobStore.put(coverBlob);
